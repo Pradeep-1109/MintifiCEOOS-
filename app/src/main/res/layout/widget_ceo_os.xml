@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="12dp"
+    android:background="@drawable/widget_background">
+
+    <!-- Header: Logo + Title -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="CEO OS"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#1E3A8A"
+            android:fontFamily="sans-serif-medium"/>
+
+        <TextView
+            android:id="@+id/widget_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ready"
+            android:textSize="11sp"
+            android:textColor="#64748B"
+            android:fontFamily="monospace"/>
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E2E8F0"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- Primary Button (Record / Pause / Resume / Processing) -->
+    <TextView
+        android:id="@+id/widget_btn_primary"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:gravity="center"
+        android:text="⏺  Record"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/widget_btn_primary"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Secondary Button (Stop — only visible when recording/paused) -->
+    <TextView
+        android:id="@+id/widget_btn_secondary"
+        android:layout_width="match_parent"
+        android:layout_height="38dp"
+        android:gravity="center"
+        android:text="⏹  Stop"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="#DC2626"
+        android:background="@drawable/widget_btn_secondary"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Progress bar (shown during processing) -->
+    <ProgressBar
+        android:id="@+id/widget_progress_bar"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:indeterminate="true"
+        android:progressTint="#3B82F6"
+        android:visibility="gone"
+        android:layout_marginBottom="4dp"/>
+
+    <!-- Progress / Done text -->
+    <TextView
+        android:id="@+id/widget_progress_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text=""
+        android:textSize="10sp"
+        android:textColor="#64748B"
+        android:fontFamily="monospace"
+        android:visibility="gone"/>
+
+</LinearLayout>

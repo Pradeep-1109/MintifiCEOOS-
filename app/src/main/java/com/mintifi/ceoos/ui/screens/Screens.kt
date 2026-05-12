@@ -3,6 +3,7 @@ package com.mintifi.ceoos.ui.screens
 import android.Manifest
 import android.content.Context
 import android.net.Uri
+import androidx.compose.ui.draw.clip
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*

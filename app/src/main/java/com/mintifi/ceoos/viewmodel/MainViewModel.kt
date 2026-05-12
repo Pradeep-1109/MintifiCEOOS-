@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import com.mintifi.ceoos.widget.WidgetUpdater
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -148,6 +149,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             ctx.startForegroundService(
                 Intent(ctx, RecordingService::class.java).also { it.action = RecordingService.ACTION_START }
             )
+            WidgetUpdater.onRecordingStarted(ctx)
             _isRecording.value  = true
             _isPaused.value     = false
             _recordingDur.value = 0L
@@ -181,6 +183,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             getApplication<Application>().startService(
                 Intent(getApplication(), RecordingService::class.java).also { it.action = RecordingService.ACTION_PAUSE }
             )
+            WidgetUpdater.onRecordingPaused(getApplication())
             _isPaused.value = true
         } catch (e: Exception) { Timber.e(e) }
     }
@@ -190,6 +193,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             getApplication<Application>().startService(
                 Intent(getApplication(), RecordingService::class.java).also { it.action = RecordingService.ACTION_RESUME }
             )
+            WidgetUpdater.onRecordingResumed(getApplication())
             _isPaused.value = false
         } catch (e: Exception) { Timber.e(e) }
     }
@@ -248,6 +252,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _isAnalyzing.value = true
             _uiMessage.value   = if (isRetry) "Retrying transcription..." else "Transcribing (Hindi+English)..."
+            WidgetUpdater.onProcessingStarted(getApplication(), "Transcribing audio...")
             val durationMs     = System.currentTimeMillis() - recordingStartTime
             val dateFmt        = SimpleDateFormat("dd MMM HH:mm", Locale.getDefault())
             try {
@@ -260,10 +265,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
 
                 _uiMessage.value = "Generating summary..."
+                WidgetUpdater.onProcessingStep(getApplication(), "Generating summary...")
                 val summary = try { api.generateSummary(transcript) } catch (e: Exception) { "" }
                 if (summary.isNotBlank()) _lastSummary.value = summary
 
                 _uiMessage.value = "Extracting tasks..."
+                WidgetUpdater.onProcessingStep(getApplication(), "Extracting tasks...")
                 val tasks = try { api.analyzeTranscript(transcript, contextNote) } catch (e: Exception) { emptyList() }
 
                 val sid = if (currentSessionId > 0) currentSessionId else {
@@ -287,6 +294,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     autoAddToTodo(tasks)
                     val projectCount = tasks.map { it.projectGroup }.toSet().size
                     _uiMessage.value = "Done! Found " + tasks.size + " tasks from " + projectCount + " projects."
+                    WidgetUpdater.onProcessingDone(getApplication(), "Found " + tasks.size + " tasks from " + projectCount + " projects")
                 }
 
                 db.sessionDao().update(
