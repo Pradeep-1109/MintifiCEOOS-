@@ -1,4 +1,5 @@
 package com.mintifi.ceoos.data.database
+
 import android.content.Context
 import androidx.room.*
 import com.mintifi.ceoos.data.model.*
@@ -25,22 +26,22 @@ class Converters {
 
 @Dao interface SessionDao {
     @Query("SELECT * FROM sessions WHERE isHidden = 0 ORDER BY date DESC") fun getAll(): Flow<List<Session>>
-    @Query("SELECT * FROM sessions ORDER BY date DESC") fun getAllIncludingHidden(): Flow<List<Session>>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(s: Session): Long
     @Update suspend fun update(s: Session)
     @Delete suspend fun delete(s: Session)
     @Query("UPDATE sessions SET isHidden = 1 WHERE id = :id") suspend fun hide(id: Int)
-    @Query("UPDATE sessions SET isHidden = 0 WHERE id = :id") suspend fun unhide(id: Int)
 }
+
 @Dao interface TaskDao {
     @Query("SELECT * FROM tasks ORDER BY priority ASC, createdAt DESC") fun getAll(): Flow<List<Task>>
-    @Query("SELECT * FROM tasks WHERE sessionId = :sid") fun getBySession(sid: Int): Flow<List<Task>>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(t: Task): Long
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(tasks: List<Task>)
     @Update suspend fun update(t: Task)
     @Delete suspend fun delete(t: Task)
     @Query("UPDATE tasks SET status = :status WHERE id = :id") suspend fun updateStatus(id: Int, status: TaskStatus)
+    @Query("DELETE FROM tasks WHERE id = :id") suspend fun deleteById(id: Int)
 }
+
 @Dao interface ReminderDao {
     @Query("SELECT * FROM reminders ORDER BY timeHour ASC, timeMinute ASC") fun getAll(): Flow<List<Reminder>>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(r: Reminder): Long
@@ -49,6 +50,7 @@ class Converters {
     @Delete suspend fun delete(r: Reminder)
     @Query("UPDATE reminders SET isActive = :active WHERE id = :id") suspend fun setActive(id: Int, active: Boolean)
 }
+
 @Dao interface TodoDao {
     @Query("SELECT * FROM todos ORDER BY priority ASC, createdAt DESC") fun getAll(): Flow<List<TodoItem>>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(item: TodoItem): Long
@@ -58,13 +60,31 @@ class Converters {
     @Query("UPDATE todos SET isCompleted = :done WHERE id = :id") suspend fun setCompleted(id: Int, done: Boolean)
     @Query("DELETE FROM todos WHERE isCompleted = 1 AND listType = :listType") suspend fun clearCompleted(listType: TodoListType)
 }
+
 @Dao interface ChatDao {
     @Query("SELECT * FROM chat_messages ORDER BY timestamp ASC") fun getAll(): Flow<List<ChatMessage>>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(msg: ChatMessage): Long
     @Query("DELETE FROM chat_messages") suspend fun clearAll()
 }
 
-@Database(entities = [Session::class, Task::class, Reminder::class, TodoItem::class, ChatMessage::class], version = 2, exportSchema = false)
+@Dao interface OfflineQueueDao {
+    @Query("SELECT * FROM offline_queue WHERE status = 'PENDING' ORDER BY queuedAt ASC")
+    fun getPending(): Flow<List<OfflineQueueItem>>
+    @Query("SELECT COUNT(*) FROM offline_queue WHERE status = 'PENDING'")
+    fun getPendingCount(): Flow<Int>
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(item: OfflineQueueItem): Long
+    @Query("UPDATE offline_queue SET status = 'PROCESSING' WHERE id = :id") suspend fun markProcessing(id: Int)
+    @Query("UPDATE offline_queue SET status = 'DONE' WHERE id = :id") suspend fun markDone(id: Int)
+    @Query("DELETE FROM offline_queue WHERE status = 'DONE'") suspend fun clearDone()
+    @Delete suspend fun delete(item: OfflineQueueItem)
+}
+
+@Database(
+    entities = [Session::class, Task::class, Reminder::class, TodoItem::class,
+                ChatMessage::class, OfflineQueueItem::class],
+    version = 3,
+    exportSchema = false
+)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
@@ -72,12 +92,17 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
     abstract fun todoDao(): TodoDao
     abstract fun chatDao(): ChatDao
+    abstract fun offlineQueueDao(): OfflineQueueDao
+
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
         fun getInstance(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "mintifi_ceo_os.db")
-                    .fallbackToDestructiveMigration().build().also { INSTANCE = it }
+                INSTANCE ?: Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "mintifi_ceo_os.db"
+                ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
             }
     }
 }

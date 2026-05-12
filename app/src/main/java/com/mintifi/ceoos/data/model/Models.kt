@@ -1,4 +1,5 @@
 package com.mintifi.ceoos.data.model
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -12,7 +13,7 @@ enum class Category(val label: String, val emoji: String) {
     COLLECTIONS("Collections","💰"), AI_PROJECTS("AI Projects","🤖"),
     TREDS("TReDS","🔄"), MBA("MBA","📚"), GENERAL("General","📌")
 }
-enum class SessionStatus { RECORDING, PROCESSING, DONE, ERROR }
+enum class SessionStatus { RECORDING, PROCESSING, DONE, ERROR, QUEUED }
 enum class ReminderCategory(val label: String, val emoji: String) {
     CEO_PREP("CEO Prep","👑"), WORK("Work","💼"), MBA("MBA","📚"),
     PERSONAL("Personal","👤"), GENERAL("General","🔔")
@@ -58,30 +59,50 @@ data class Task(
 @Entity(tableName = "reminders")
 data class Reminder(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val title: String = "", val category: ReminderCategory = ReminderCategory.GENERAL,
+    val title: String = "",
+    val category: ReminderCategory = ReminderCategory.GENERAL,
     val repeatType: RepeatType = RepeatType.WEEKDAYS,
-    val timeHour: Int = 9, val timeMinute: Int = 0,
-    val isActive: Boolean = true, val notificationId: Int = 0
+    val timeHour: Int = 9,
+    val timeMinute: Int = 0,
+    val isActive: Boolean = true,
+    val notificationId: Int = 0
 )
 
 @Entity(tableName = "todos")
 data class TodoItem(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val title: String = "", val listType: TodoListType = TodoListType.TODAY,
+    val title: String = "",
+    val listType: TodoListType = TodoListType.TODAY,
     val priority: TodoPriority = TodoPriority.NORMAL,
-    val isCompleted: Boolean = false, val createdAt: Long = System.currentTimeMillis()
+    val isCompleted: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "chat_messages")
 data class ChatMessage(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val role: String = "user", val content: String = "",
+    val role: String = "user",
+    val content: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )
 
+// Offline queue — stores recordings waiting for internet
+@Entity(tableName = "offline_queue")
+data class OfflineQueueItem(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val audioPath: String = "",
+    val contextNote: String = "",
+    val queuedAt: Long = System.currentTimeMillis(),
+    val status: String = "PENDING"
+)
+
 data class DashboardStats(
-    val total: Int = 0, val p0Count: Int = 0, val p1Count: Int = 0,
-    val p2Count: Int = 0, val p3Count: Int = 0, val completedCount: Int = 0
+    val total: Int = 0,
+    val p0Count: Int = 0,
+    val p1Count: Int = 0,
+    val p2Count: Int = 0,
+    val p3Count: Int = 0,
+    val completedCount: Int = 0
 )
 
 data class TaskFilter(

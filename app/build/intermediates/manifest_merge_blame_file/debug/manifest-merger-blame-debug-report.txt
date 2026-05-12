@@ -1,0 +1,195 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.mintifi.ceoos"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+11-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:3:5-71
+11-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:3:22-68
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:4:5-67
+12-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:4:22-64
+13    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+13-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:5:5-77
+13-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:5:22-74
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+14-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:6:5-88
+14-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:6:22-85
+15    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+15-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:7:5-77
+15-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:7:22-74
+16    <uses-permission android:name="android.permission.VIBRATE" />
+16-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:8:5-66
+16-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:8:22-63
+17
+18    <permission
+18-->[androidx.core:core:1.12.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\c38664f66f8c5879356d422ec4bc5f48\transformed\core-1.12.0\AndroidManifest.xml:22:5-24:47
+19        android:name="com.mintifi.ceoos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+19-->[androidx.core:core:1.12.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\c38664f66f8c5879356d422ec4bc5f48\transformed\core-1.12.0\AndroidManifest.xml:23:9-81
+20        android:protectionLevel="signature" />
+20-->[androidx.core:core:1.12.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\c38664f66f8c5879356d422ec4bc5f48\transformed\core-1.12.0\AndroidManifest.xml:24:9-44
+21
+22    <uses-permission android:name="com.mintifi.ceoos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+22-->[androidx.core:core:1.12.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\c38664f66f8c5879356d422ec4bc5f48\transformed\core-1.12.0\AndroidManifest.xml:26:5-97
+22-->[androidx.core:core:1.12.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\c38664f66f8c5879356d422ec4bc5f48\transformed\core-1.12.0\AndroidManifest.xml:26:22-94
+23
+24    <application
+24-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:9:5-41:19
+25        android:name="com.mintifi.ceoos.MintifiApp"
+25-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:10:9-35
+26        android:allowBackup="true"
+26-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:11:9-35
+27        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+27-->[androidx.core:core:1.12.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\c38664f66f8c5879356d422ec4bc5f48\transformed\core-1.12.0\AndroidManifest.xml:28:18-86
+28        android:debuggable="true"
+29        android:extractNativeLibs="false"
+30        android:icon="@mipmap/ic_launcher"
+30-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:13:9-43
+31        android:label="CEO OS"
+31-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:12:9-31
+32        android:networkSecurityConfig="@xml/network_security_config"
+32-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:17:9-69
+33        android:roundIcon="@mipmap/ic_launcher_round"
+33-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:14:9-54
+34        android:supportsRtl="true"
+34-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:15:9-35
+35        android:theme="@style/Theme.MintifiCEOOS" >
+35-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:16:9-50
+36        <activity
+36-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:18:9-27:20
+37            android:name="com.mintifi.ceoos.MainActivity"
+37-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:19:13-41
+38            android:exported="true"
+38-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:20:13-36
+39            android:theme="@style/Theme.MintifiCEOOS"
+39-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:22:13-54
+40            android:windowSoftInputMode="adjustResize" >
+40-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:21:13-55
+41            <intent-filter>
+41-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:23:13-26:29
+42                <action android:name="android.intent.action.MAIN" />
+42-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:24:17-69
+42-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:24:25-66
+43
+44                <category android:name="android.intent.category.LAUNCHER" />
+44-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:25:17-77
+44-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:25:27-74
+45            </intent-filter>
+46        </activity>
+47
+48        <service
+48-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:28:9-32:58
+49            android:name="com.mintifi.ceoos.data.service.RecordingService"
+49-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:29:13-58
+50            android:enabled="true"
+50-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:30:13-35
+51            android:exported="false"
+51-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:31:13-37
+52            android:foregroundServiceType="microphone" />
+52-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:32:13-55
+53
+54        <receiver
+54-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:33:9-40:20
+55            android:name="com.mintifi.ceoos.data.receiver.DailyBriefingReceiver"
+55-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:34:13-64
+56            android:enabled="true"
+56-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:35:13-35
+57            android:exported="false" >
+57-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:36:13-37
+58            <intent-filter>
+58-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:37:13-39:29
+59                <action android:name="android.intent.action.BOOT_COMPLETED" />
+59-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:38:17-79
+59-->C:\Users\pradeep.singh1\Desktop\CEOOSv2\MintifiCEOOS\app\src\main\AndroidManifest.xml:38:25-76
+60            </intent-filter>
+61        </receiver>
+62
+63        <activity
+63-->[androidx.compose.ui:ui-tooling-android:1.6.1] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\faf58ae0f25d650730dfe05a16574f57\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+64            android:name="androidx.compose.ui.tooling.PreviewActivity"
+64-->[androidx.compose.ui:ui-tooling-android:1.6.1] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\faf58ae0f25d650730dfe05a16574f57\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+65            android:exported="true" />
+65-->[androidx.compose.ui:ui-tooling-android:1.6.1] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\faf58ae0f25d650730dfe05a16574f57\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+66
+67        <provider
+67-->[androidx.emoji2:emoji2:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\9d56ac163b9a3b979ae6ff3d53407766\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+68            android:name="androidx.startup.InitializationProvider"
+68-->[androidx.emoji2:emoji2:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\9d56ac163b9a3b979ae6ff3d53407766\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+69            android:authorities="com.mintifi.ceoos.androidx-startup"
+69-->[androidx.emoji2:emoji2:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\9d56ac163b9a3b979ae6ff3d53407766\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+70            android:exported="false" >
+70-->[androidx.emoji2:emoji2:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\9d56ac163b9a3b979ae6ff3d53407766\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+71            <meta-data
+71-->[androidx.emoji2:emoji2:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\9d56ac163b9a3b979ae6ff3d53407766\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+72                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+72-->[androidx.emoji2:emoji2:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\9d56ac163b9a3b979ae6ff3d53407766\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+73                android:value="androidx.startup" />
+73-->[androidx.emoji2:emoji2:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\9d56ac163b9a3b979ae6ff3d53407766\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+74            <meta-data
+74-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\36b3acb8b59adbb5057b612d0d95d045\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:29:13-31:52
+75                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+75-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\36b3acb8b59adbb5057b612d0d95d045\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:30:17-78
+76                android:value="androidx.startup" />
+76-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\36b3acb8b59adbb5057b612d0d95d045\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:31:17-49
+77            <meta-data
+77-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
+78                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+78-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
+79                android:value="androidx.startup" />
+79-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
+80        </provider>
+81
+82        <service
+82-->[androidx.room:room-runtime:2.6.1] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\88a62031a27856b5c36698cf36c1564d\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
+83            android:name="androidx.room.MultiInstanceInvalidationService"
+83-->[androidx.room:room-runtime:2.6.1] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\88a62031a27856b5c36698cf36c1564d\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
+84            android:directBootAware="true"
+84-->[androidx.room:room-runtime:2.6.1] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\88a62031a27856b5c36698cf36c1564d\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
+85            android:exported="false" />
+85-->[androidx.room:room-runtime:2.6.1] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\88a62031a27856b5c36698cf36c1564d\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
+86
+87        <receiver
+87-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
+88            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+88-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
+89            android:directBootAware="false"
+89-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
+90            android:enabled="true"
+90-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
+91            android:exported="true"
+91-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
+92            android:permission="android.permission.DUMP" >
+92-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
+93            <intent-filter>
+93-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
+94                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+94-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
+94-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
+95            </intent-filter>
+96            <intent-filter>
+96-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
+97                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+97-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
+97-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
+98            </intent-filter>
+99            <intent-filter>
+99-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
+100                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+100-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
+100-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
+101            </intent-filter>
+102            <intent-filter>
+102-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
+103                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+103-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
+103-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\pradeep.singh1\.gradle\caches\transforms-3\31340249dd4a61305e3e756a3b363211\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
+104            </intent-filter>
+105        </receiver>
+106    </application>
+107
+108</manifest>

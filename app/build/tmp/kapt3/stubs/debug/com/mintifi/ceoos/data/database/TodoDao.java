@@ -1,0 +1,45 @@
+package com.mintifi.ceoos.data.database;
+
+@kotlin.Metadata(mv = {1, 9, 0}, k = 1, xi = 48, d1 = {"\u0000@\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0000\n\u0002\u0010\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0003\n\u0002\u0018\u0002\n\u0002\b\u0002\n\u0002\u0018\u0002\n\u0002\u0010 \n\u0000\n\u0002\u0010\t\n\u0002\b\u0005\n\u0002\u0010\b\n\u0000\n\u0002\u0010\u000b\n\u0002\b\u0003\bg\u0018\u00002\u00020\u0001J\u0016\u0010\u0002\u001a\u00020\u00032\u0006\u0010\u0004\u001a\u00020\u0005H\u00a7@\u00a2\u0006\u0002\u0010\u0006J\u0016\u0010\u0007\u001a\u00020\u00032\u0006\u0010\b\u001a\u00020\tH\u00a7@\u00a2\u0006\u0002\u0010\nJ\u0014\u0010\u000b\u001a\u000e\u0012\n\u0012\b\u0012\u0004\u0012\u00020\t0\r0\fH\'J\u0016\u0010\u000e\u001a\u00020\u000f2\u0006\u0010\b\u001a\u00020\tH\u00a7@\u00a2\u0006\u0002\u0010\nJ\u001c\u0010\u0010\u001a\u00020\u00032\f\u0010\u0011\u001a\b\u0012\u0004\u0012\u00020\t0\rH\u00a7@\u00a2\u0006\u0002\u0010\u0012J\u001e\u0010\u0013\u001a\u00020\u00032\u0006\u0010\u0014\u001a\u00020\u00152\u0006\u0010\u0016\u001a\u00020\u0017H\u00a7@\u00a2\u0006\u0002\u0010\u0018J\u0016\u0010\u0019\u001a\u00020\u00032\u0006\u0010\b\u001a\u00020\tH\u00a7@\u00a2\u0006\u0002\u0010\n\u00a8\u0006\u001a"}, d2 = {"Lcom/mintifi/ceoos/data/database/TodoDao;", "", "clearCompleted", "", "listType", "Lcom/mintifi/ceoos/data/model/TodoListType;", "(Lcom/mintifi/ceoos/data/model/TodoListType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", "delete", "item", "Lcom/mintifi/ceoos/data/model/TodoItem;", "(Lcom/mintifi/ceoos/data/model/TodoItem;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", "getAll", "Lkotlinx/coroutines/flow/Flow;", "", "insert", "", "insertAll", "items", "(Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", "setCompleted", "id", "", "done", "", "(IZLkotlin/coroutines/Continuation;)Ljava/lang/Object;", "update", "app_debug"})
+@androidx.room.Dao()
+public abstract interface TodoDao {
+    
+    @androidx.room.Query(value = "SELECT * FROM todos ORDER BY priority ASC, createdAt DESC")
+    @org.jetbrains.annotations.NotNull()
+    public abstract kotlinx.coroutines.flow.Flow<java.util.List<com.mintifi.ceoos.data.model.TodoItem>> getAll();
+    
+    @androidx.room.Insert(onConflict = 1)
+    @org.jetbrains.annotations.Nullable()
+    public abstract java.lang.Object insert(@org.jetbrains.annotations.NotNull()
+    com.mintifi.ceoos.data.model.TodoItem item, @org.jetbrains.annotations.NotNull()
+    kotlin.coroutines.Continuation<? super java.lang.Long> $completion);
+    
+    @androidx.room.Insert(onConflict = 1)
+    @org.jetbrains.annotations.Nullable()
+    public abstract java.lang.Object insertAll(@org.jetbrains.annotations.NotNull()
+    java.util.List<com.mintifi.ceoos.data.model.TodoItem> items, @org.jetbrains.annotations.NotNull()
+    kotlin.coroutines.Continuation<? super kotlin.Unit> $completion);
+    
+    @androidx.room.Update()
+    @org.jetbrains.annotations.Nullable()
+    public abstract java.lang.Object update(@org.jetbrains.annotations.NotNull()
+    com.mintifi.ceoos.data.model.TodoItem item, @org.jetbrains.annotations.NotNull()
+    kotlin.coroutines.Continuation<? super kotlin.Unit> $completion);
+    
+    @androidx.room.Delete()
+    @org.jetbrains.annotations.Nullable()
+    public abstract java.lang.Object delete(@org.jetbrains.annotations.NotNull()
+    com.mintifi.ceoos.data.model.TodoItem item, @org.jetbrains.annotations.NotNull()
+    kotlin.coroutines.Continuation<? super kotlin.Unit> $completion);
+    
+    @androidx.room.Query(value = "UPDATE todos SET isCompleted = :done WHERE id = :id")
+    @org.jetbrains.annotations.Nullable()
+    public abstract java.lang.Object setCompleted(int id, boolean done, @org.jetbrains.annotations.NotNull()
+    kotlin.coroutines.Continuation<? super kotlin.Unit> $completion);
+    
+    @androidx.room.Query(value = "DELETE FROM todos WHERE isCompleted = 1 AND listType = :listType")
+    @org.jetbrains.annotations.Nullable()
+    public abstract java.lang.Object clearCompleted(@org.jetbrains.annotations.NotNull()
+    com.mintifi.ceoos.data.model.TodoListType listType, @org.jetbrains.annotations.NotNull()
+    kotlin.coroutines.Continuation<? super kotlin.Unit> $completion);
+}

@@ -49,15 +49,29 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToRecord: () -> Unit, on
     val activeReminders by viewModel.activeRemindersCount.collectAsState()
     val dailyBriefing   by viewModel.dailyBriefing.collectAsState()
     val lastSummary     by viewModel.lastSummary.collectAsState()
+    val offlineCount    by viewModel.offlineQueueCount.collectAsState()
+    val isOnline        by viewModel.isOnline.collectAsState()
     var showBriefing    by remember { mutableStateOf(false) }
     var showSummary     by remember { mutableStateOf(false) }
+    var taskToDelete    by remember { mutableStateOf<Task?>(null) }
     val fmt             = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
 
     LaunchedEffect(lastSummary) { if (lastSummary != null) showSummary = true }
 
+    // Delete task confirmation dialog
+    taskToDelete?.let { task ->
+        AlertDialog(
+            onDismissRequest = { taskToDelete = null },
+            title = { Text("Delete Task?") },
+            text = { Text("\"" + task.title + "\" will be permanently deleted.") },
+            confirmButton = { TextButton(onClick = { viewModel.deleteTask(task); taskToDelete = null }, colors = ButtonDefaults.textButtonColors(contentColor = MintifiColors.DangerRed)) { Text("Delete") } },
+            dismissButton = { TextButton(onClick = { taskToDelete = null }) { Text("Cancel") } }
+        )
+    }
+
     Column(Modifier.fillMaxSize().background(MintifiColors.Background).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
-        // Logo header
+        // Header with logo
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(painter = painterResource(id = R.drawable.mintifi_logo), contentDescription = "Mintifi", modifier = Modifier.height(28.dp))
             Spacer(Modifier.weight(1f))
@@ -66,15 +80,29 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToRecord: () -> Unit, on
             Text("Good $greet, Pradeep", style = MaterialTheme.typography.bodyMedium, color = MintifiColors.TextSecondary)
         }
 
-        // Summary card (shows after recording)
+        // Offline banner
+        if (!isOnline || offlineCount > 0) {
+            Card(colors = CardDefaults.cardColors(containerColor = if (!isOnline) MintifiColors.DangerRed.copy(alpha = 0.1f) else MintifiColors.WarnAmber.copy(alpha = 0.1f)), border = BorderStroke(0.5.dp, if (!isOnline) MintifiColors.DangerRed.copy(alpha = 0.5f) else MintifiColors.WarnAmber.copy(alpha = 0.5f)), shape = RoundedCornerShape(10.dp)) {
+                Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(if (!isOnline) Icons.Default.WifiOff else Icons.Default.CloudUpload, null, tint = if (!isOnline) MintifiColors.DangerRed else MintifiColors.WarnAmber, modifier = Modifier.size(18.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(if (!isOnline) "No internet connection" else "$offlineCount recording(s) waiting to process", style = MaterialTheme.typography.titleSmall, color = if (!isOnline) MintifiColors.DangerRed else MintifiColors.WarnAmber)
+                        if (!isOnline) Text("Recordings will be queued and processed when connected", style = MaterialTheme.typography.bodySmall, color = MintifiColors.TextSecondary)
+                    }
+                    if (offlineCount > 0 && isOnline) {
+                        TextButton(onClick = { viewModel.processOfflineQueue() }, colors = ButtonDefaults.textButtonColors(contentColor = MintifiColors.WarnAmber)) { Text("Process") }
+                    }
+                }
+            }
+        }
+
+        // Summary card
         if (showSummary && lastSummary != null) {
             Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)), shape = RoundedCornerShape(12.dp), border = BorderStroke(0.5.dp, MintifiColors.Accent.copy(alpha = 0.4f))) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Summarize, null, tint = MintifiColors.Accent, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Meeting Summary", style = MaterialTheme.typography.titleSmall, color = MintifiColors.Accent)
-                        Spacer(Modifier.weight(1f))
+                        Icon(Icons.Default.Summarize, null, tint = MintifiColors.Accent, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(6.dp))
+                        Text("Meeting Summary", style = MaterialTheme.typography.titleSmall, color = MintifiColors.Accent); Spacer(Modifier.weight(1f))
                         IconButton(onClick = { showSummary = false }, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, null, tint = MintifiColors.TextMuted, modifier = Modifier.size(16.dp)) }
                     }
                     Text(lastSummary!!, style = MaterialTheme.typography.bodySmall, color = MintifiColors.TextPrimary)
@@ -82,7 +110,7 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToRecord: () -> Unit, on
             }
         }
 
-        // Briefing button
+        // Title + briefing
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("CEO OS", style = MaterialTheme.typography.headlineMedium, color = MintifiColors.TextPrimary)
@@ -101,7 +129,8 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToRecord: () -> Unit, on
                         Text("Daily Briefing", style = MaterialTheme.typography.titleMedium, color = MintifiColors.Accent); Spacer(Modifier.weight(1f))
                         IconButton(onClick = { showBriefing = false }, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, null, tint = MintifiColors.TextMuted, modifier = Modifier.size(16.dp)) }
                     }
-                    dailyBriefing?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MintifiColors.TextPrimary) } ?: CircularProgressIndicator(Modifier.size(16.dp), color = MintifiColors.Accent, strokeWidth = 2.dp)
+                    dailyBriefing?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MintifiColors.TextPrimary) }
+                        ?: CircularProgressIndicator(Modifier.size(16.dp), color = MintifiColors.Accent, strokeWidth = 2.dp)
                 }
             }
         }
@@ -124,44 +153,43 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToRecord: () -> Unit, on
             DActionBtn("Reminders ($activeReminders)", MintifiColors.Surface, MintifiColors.AccentBlue, Modifier.weight(1f), onNavigateToReminders)
         }
 
-        // Critical tasks
+        // Critical tasks with delete
         val critical = allTasks.filter { it.priority == Priority.P0 || it.priority == Priority.P1 }.take(5)
         if (critical.isNotEmpty()) {
             Text("CRITICAL CEO ASKS", style = MaterialTheme.typography.labelSmall, color = MintifiColors.TextMuted, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp)
             critical.forEach { task ->
                 Card(colors = CardDefaults.cardColors(containerColor = MintifiColors.Surface), shape = RoundedCornerShape(10.dp), border = BorderStroke(0.5.dp, MintifiColors.Border), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(8.dp).background(if (task.priority == Priority.P0) MintifiColors.DangerRed else MintifiColors.WarnAmber, CircleShape))
-                            Text(task.title, style = MaterialTheme.typography.bodyMedium, color = MintifiColors.TextPrimary, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(task.deadline, style = MaterialTheme.typography.labelSmall, color = MintifiColors.TextMuted, fontFamily = FontFamily.Monospace)
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Box(Modifier.background(MintifiColors.Accent.copy(alpha = 0.1f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                                Text("📁 " + task.projectGroup, style = MaterialTheme.typography.labelSmall, color = MintifiColors.Accent, fontFamily = FontFamily.Monospace)
+                    Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(8.dp).background(if (task.priority == Priority.P0) MintifiColors.DangerRed else MintifiColors.WarnAmber, CircleShape))
+                        Column(Modifier.weight(1f)) {
+                            Text(task.title, style = MaterialTheme.typography.bodyMedium, color = MintifiColors.TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(task.deadline, style = MaterialTheme.typography.labelSmall, color = MintifiColors.WarnAmber, fontFamily = FontFamily.Monospace)
+                                Text("·", color = MintifiColors.TextMuted)
+                                Text(SimpleDateFormat("dd MMM HH:mm", Locale.getDefault()).format(Date(task.createdAt)), style = MaterialTheme.typography.labelSmall, color = MintifiColors.TextMuted, fontFamily = FontFamily.Monospace)
                             }
-                            Text(SimpleDateFormat("dd MMM HH:mm", Locale.getDefault()).format(Date(task.createdAt)), style = MaterialTheme.typography.labelSmall, color = MintifiColors.TextMuted, fontFamily = FontFamily.Monospace)
+                        }
+                        IconButton(onClick = { taskToDelete = task }, modifier = Modifier.size(28.dp)) {
+                            Icon(Icons.Default.Delete, "Delete", tint = MintifiColors.DangerRed.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
                         }
                     }
                 }
             }
         }
 
-        // Recent sessions with delete/hide
+        // Recent sessions with hide/delete
         if (allSessions.isNotEmpty()) {
             Text("RECENT SESSIONS", style = MaterialTheme.typography.labelSmall, color = MintifiColors.TextMuted, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp)
             allSessions.take(5).forEach { s ->
                 Card(colors = CardDefaults.cardColors(containerColor = MintifiColors.Surface), shape = RoundedCornerShape(10.dp), border = BorderStroke(0.5.dp, MintifiColors.Border), modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        val tint = if (s.status == SessionStatus.DONE) MintifiColors.SuccessGreen else MintifiColors.TextMuted
-                        Icon(if (s.status == SessionStatus.DONE) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, tint = tint, modifier = Modifier.size(18.dp))
+                        Icon(if (s.status == SessionStatus.DONE) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, tint = if (s.status == SessionStatus.DONE) MintifiColors.SuccessGreen else MintifiColors.TextMuted, modifier = Modifier.size(18.dp))
                         Column(Modifier.weight(1f)) {
                             Text(s.title.ifBlank { "Untitled" }, style = MaterialTheme.typography.titleSmall, color = MintifiColors.TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(fmt.format(Date(s.date)), style = MaterialTheme.typography.labelSmall, color = MintifiColors.TextMuted, fontFamily = FontFamily.Monospace)
                                 if (s.taskCount > 0) Text(s.taskCount.toString() + " tasks", style = MaterialTheme.typography.labelSmall, color = MintifiColors.Accent, fontFamily = FontFamily.Monospace)
                             }
-                            if (s.summary.isNotBlank()) Text(s.summary.take(80) + "...", style = MaterialTheme.typography.bodySmall, color = MintifiColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         IconButton(onClick = { viewModel.hideSession(s.id) }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.VisibilityOff, "Hide", tint = MintifiColors.TextMuted, modifier = Modifier.size(14.dp)) }
                         IconButton(onClick = { viewModel.deleteSession(s) }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Delete, "Delete", tint = MintifiColors.DangerRed.copy(alpha = 0.7f), modifier = Modifier.size(14.dp)) }
@@ -176,7 +204,7 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToRecord: () -> Unit, on
 @Composable private fun DStatCard(label: String, value: String, color: Color, modifier: Modifier) { Card(modifier, colors=CardDefaults.cardColors(containerColor=MintifiColors.Surface), shape=RoundedCornerShape(10.dp), border=BorderStroke(0.5.dp,MintifiColors.Border)){ Column(Modifier.padding(12.dp)){ Text(label,style=MaterialTheme.typography.labelSmall,color=MintifiColors.TextMuted,fontFamily=FontFamily.Monospace); Spacer(Modifier.height(4.dp)); Text(value,style=MaterialTheme.typography.headlineMedium,color=color) } } }
 @Composable private fun DActionBtn(label: String, bg: Color, fg: Color, modifier: Modifier, onClick: () -> Unit) { Card(modifier.clickable{onClick()},colors=CardDefaults.cardColors(containerColor=bg),shape=RoundedCornerShape(10.dp),border=BorderStroke(0.5.dp,MintifiColors.Border)){ Box(Modifier.fillMaxWidth().padding(14.dp),contentAlignment=Alignment.Center){ Text(label,style=MaterialTheme.typography.titleSmall,color=fg) } } }
 
-// ── Record ────────────────────────────────────────────────────────────────────
+// ── Record Screen ─────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -189,6 +217,8 @@ fun RecordScreen(viewModel: MainViewModel) {
     val isAnalyzing by viewModel.isAnalyzing.collectAsState()
     val uiMessage   by viewModel.uiMessage.collectAsState()
     val lastSummary by viewModel.lastSummary.collectAsState()
+    val isOnline    by viewModel.isOnline.collectAsState()
+    val offlineCount by viewModel.offlineQueueCount.collectAsState()
     var contextNote by remember { mutableStateOf("") }
     var showContext by remember { mutableStateOf(false) }
     var showText    by remember { mutableStateOf(false) }
@@ -200,9 +230,31 @@ fun RecordScreen(viewModel: MainViewModel) {
 
     Column(Modifier.fillMaxSize().background(MintifiColors.Background).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Mic, null, tint = MintifiColors.Accent, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Column { Text("CEO Call Capture", style = MaterialTheme.typography.headlineSmall, color = MintifiColors.TextPrimary); Text("Supports Hindi + English (Hinglish)", style = MaterialTheme.typography.bodySmall, color = MintifiColors.TextSecondary) }
+            Icon(Icons.Default.Mic, null, tint = MintifiColors.Accent, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
+            Column {
+                Text("CEO Call Capture", style = MaterialTheme.typography.headlineSmall, color = MintifiColors.TextPrimary)
+                Text("Hindi + English supported  •  Offline queue enabled", style = MaterialTheme.typography.bodySmall, color = MintifiColors.TextSecondary)
+            }
+        }
+
+        // Offline indicator
+        if (!isOnline) {
+            Card(colors = CardDefaults.cardColors(containerColor = MintifiColors.WarnAmber.copy(alpha = 0.1f)), border = BorderStroke(0.5.dp, MintifiColors.WarnAmber.copy(alpha = 0.5f)), shape = RoundedCornerShape(8.dp)) {
+                Row(Modifier.padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.WifiOff, null, tint = MintifiColors.WarnAmber, modifier = Modifier.size(16.dp))
+                    Text("Offline mode — recordings will be queued and processed when connected", style = MaterialTheme.typography.bodySmall, color = MintifiColors.WarnAmber)
+                }
+            }
+        }
+
+        if (offlineCount > 0 && isOnline) {
+            Card(colors = CardDefaults.cardColors(containerColor = MintifiColors.SuccessGreen.copy(alpha = 0.1f)), border = BorderStroke(0.5.dp, MintifiColors.SuccessGreen.copy(alpha = 0.5f)), shape = RoundedCornerShape(8.dp)) {
+                Row(Modifier.padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CloudUpload, null, tint = MintifiColors.SuccessGreen, modifier = Modifier.size(16.dp))
+                    Text("$offlineCount queued recording(s) ready to process", style = MaterialTheme.typography.bodySmall, color = MintifiColors.SuccessGreen, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { viewModel.processOfflineQueue() }, colors = ButtonDefaults.textButtonColors(contentColor = MintifiColors.SuccessGreen)) { Text("Process Now") }
+                }
+            }
         }
 
         uiMessage?.let { msg ->
@@ -215,14 +267,10 @@ fun RecordScreen(viewModel: MainViewModel) {
             }
         }
 
-        // Summary result
         if (lastSummary != null && !isAnalyzing) {
             Card(colors=CardDefaults.cardColors(containerColor=Color(0xFFEFF6FF)), border=BorderStroke(0.5.dp,MintifiColors.Accent.copy(alpha=0.4f)), shape=RoundedCornerShape(10.dp)) {
                 Column(Modifier.padding(14.dp), verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                    Row(verticalAlignment=Alignment.CenterVertically) {
-                        Icon(Icons.Default.Summarize,null,tint=MintifiColors.Accent,modifier=Modifier.size(16.dp)); Spacer(Modifier.width(6.dp))
-                        Text("Meeting Summary", style=MaterialTheme.typography.titleSmall, color=MintifiColors.Accent)
-                    }
+                    Row(verticalAlignment=Alignment.CenterVertically) { Icon(Icons.Default.Summarize,null,tint=MintifiColors.Accent,modifier=Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Meeting Summary",style=MaterialTheme.typography.titleSmall,color=MintifiColors.Accent) }
                     Text(lastSummary!!, style=MaterialTheme.typography.bodySmall, color=MintifiColors.TextPrimary)
                 }
             }
@@ -240,21 +288,35 @@ fun RecordScreen(viewModel: MainViewModel) {
                 }
                 Spacer(Modifier.height(12.dp))
                 WaveformVisualizer(amplitude=amplitude, isRecording=isRecording&&!isPaused)
-                Spacer(Modifier.height(16.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(12.dp,Alignment.CenterHorizontally), verticalAlignment=Alignment.CenterVertically) {
+                Spacer(Modifier.height(20.dp))
+
+                // Buttons — PAUSE BUTTON IS NOW 64dp (was 52dp)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(16.dp,Alignment.CenterHorizontally), verticalAlignment=Alignment.CenterVertically) {
                     when {
                         !isRecording -> {
-                            Button(onClick={if(micPerm.status.isGranted)viewModel.startRecording() else micPerm.launchPermissionRequest()}, modifier=Modifier.size(72.dp), shape=CircleShape, colors=ButtonDefaults.buttonColors(containerColor=MintifiColors.Accent)) { Icon(Icons.Default.Mic,null,tint=Color.White,modifier=Modifier.size(28.dp)) }
-                            OutlinedButton(onClick={picker.launch("audio/*")}, shape=RoundedCornerShape(10.dp), border=BorderStroke(0.5.dp,MintifiColors.Border)) { Icon(Icons.Default.UploadFile,null,Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Upload") }
+                            Button(onClick={if(micPerm.status.isGranted)viewModel.startRecording() else micPerm.launchPermissionRequest()}, modifier=Modifier.size(80.dp), shape=CircleShape, colors=ButtonDefaults.buttonColors(containerColor=MintifiColors.Accent)) { Icon(Icons.Default.Mic,null,tint=Color.White,modifier=Modifier.size(32.dp)) }
+                            OutlinedButton(onClick={picker.launch("audio/*")}, shape=RoundedCornerShape(12.dp), border=BorderStroke(1.dp,MintifiColors.Border), modifier=Modifier.height(52.dp)) { Icon(Icons.Default.UploadFile,null,Modifier.size(20.dp)); Spacer(Modifier.width(6.dp)); Text("Upload Audio") }
                         }
                         isPaused -> {
-                            OutlinedButton(onClick={viewModel.resumeRecording()}, shape=CircleShape, modifier=Modifier.size(52.dp), border=BorderStroke(0.5.dp,MintifiColors.AccentBlue)) { Icon(Icons.Default.PlayArrow,null,tint=MintifiColors.AccentBlue) }
-                            Button(onClick={viewModel.stopAndProcess(contextNote)}, shape=CircleShape, modifier=Modifier.size(72.dp), colors=ButtonDefaults.buttonColors(containerColor=MintifiColors.DangerRed)) { Icon(Icons.Default.Stop,null,tint=Color.White,modifier=Modifier.size(28.dp)) }
+                            // Resume — 64dp
+                            OutlinedButton(onClick={viewModel.resumeRecording()}, shape=CircleShape, modifier=Modifier.size(64.dp), border=BorderStroke(2.dp,MintifiColors.AccentBlue)) { Icon(Icons.Default.PlayArrow,null,tint=MintifiColors.AccentBlue,modifier=Modifier.size(28.dp)) }
+                            // Stop — 80dp
+                            Button(onClick={viewModel.stopAndProcess(contextNote)}, shape=CircleShape, modifier=Modifier.size(80.dp), colors=ButtonDefaults.buttonColors(containerColor=MintifiColors.DangerRed)) { Icon(Icons.Default.Stop,null,tint=Color.White,modifier=Modifier.size(32.dp)) }
                         }
                         else -> {
-                            OutlinedButton(onClick={viewModel.pauseRecording()}, shape=CircleShape, modifier=Modifier.size(52.dp), border=BorderStroke(0.5.dp,MintifiColors.WarnAmber)) { Icon(Icons.Default.Pause,null,tint=MintifiColors.WarnAmber) }
-                            Button(onClick={viewModel.stopAndProcess(contextNote)}, shape=CircleShape, modifier=Modifier.size(72.dp), colors=ButtonDefaults.buttonColors(containerColor=MintifiColors.DangerRed)) { Icon(Icons.Default.Stop,null,tint=Color.White,modifier=Modifier.size(28.dp)) }
+                            // PAUSE — now 64dp (was 52dp) and border is 2dp (was 0.5dp) — much more visible
+                            OutlinedButton(onClick={viewModel.pauseRecording()}, shape=CircleShape, modifier=Modifier.size(64.dp), border=BorderStroke(2.dp,MintifiColors.WarnAmber)) { Icon(Icons.Default.Pause,null,tint=MintifiColors.WarnAmber,modifier=Modifier.size(28.dp)) }
+                            // Stop — 80dp
+                            Button(onClick={viewModel.stopAndProcess(contextNote)}, shape=CircleShape, modifier=Modifier.size(80.dp), colors=ButtonDefaults.buttonColors(containerColor=MintifiColors.DangerRed)) { Icon(Icons.Default.Stop,null,tint=Color.White,modifier=Modifier.size(32.dp)) }
                         }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                // Button labels
+                if (isRecording) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)) {
+                        Text(if(isPaused)"Resume" else "Pause", style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextMuted, modifier=Modifier.width(64.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Text("Stop & Analyze", style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextMuted, modifier=Modifier.width(80.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     }
                 }
             }
@@ -273,7 +335,7 @@ fun RecordScreen(viewModel: MainViewModel) {
     }
 }
 
-// ── TaskLog with multi-select filter + project grouping ───────────────────────
+// ── Task Log with Edit + Delete ───────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -281,7 +343,20 @@ fun TaskLogScreen(viewModel: MainViewModel) {
     val tasks  by viewModel.filteredTasks.collectAsState()
     val filter by viewModel.taskFilter.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var taskToEdit   by remember { mutableStateOf<Task?>(null) }
+    var taskToDelete by remember { mutableStateOf<Task?>(null) }
     val fmt = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
+
+    // Delete confirmation
+    taskToDelete?.let { task ->
+        AlertDialog(
+            onDismissRequest = { taskToDelete = null },
+            title = { Text("Delete Task?") },
+            text = { Text("\"" + task.title + "\" will be permanently deleted.") },
+            confirmButton = { TextButton(onClick = { viewModel.deleteTask(task); taskToDelete = null }, colors = ButtonDefaults.textButtonColors(contentColor = MintifiColors.DangerRed)) { Text("Delete") } },
+            dismissButton = { TextButton(onClick = { taskToDelete = null }) { Text("Cancel") } }
+        )
+    }
 
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.background(MintifiColors.Surface).padding(16.dp), verticalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -293,99 +368,143 @@ fun TaskLogScreen(viewModel: MainViewModel) {
                 }
             }
             OutlinedTextField(value=searchQuery, onValueChange={searchQuery=it;viewModel.setFilter(filter.copy(query=it))}, placeholder={Text("Search tasks, projects...",color=MintifiColors.TextMuted)}, leadingIcon={Icon(Icons.Default.Search,null,tint=MintifiColors.TextMuted,modifier=Modifier.size(18.dp))}, modifier=Modifier.fillMaxWidth().height(50.dp), colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=MintifiColors.Accent,unfocusedBorderColor=MintifiColors.Border,focusedTextColor=MintifiColors.TextPrimary,unfocusedTextColor=MintifiColors.TextPrimary,cursorColor=MintifiColors.Accent,focusedContainerColor=MintifiColors.Surface2,unfocusedContainerColor=MintifiColors.Surface2), shape=RoundedCornerShape(8.dp), singleLine=true)
-
-            // Priority multi-select
-            Text("Priority (select multiple):", style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextMuted)
+            Text("Priority:", style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextMuted)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                 Priority.values().forEach { p ->
-                    val selected = p in filter.priorities
-                    FilterChip(selected=selected, onClick={viewModel.togglePriority(p)}, label={Text(p.label, style=MaterialTheme.typography.labelSmall, fontWeight=if(selected)FontWeight.Bold else FontWeight.Normal)}, colors=FilterChipDefaults.filterChipColors(selectedContainerColor=when(p){Priority.P0->MintifiColors.DangerRed.copy(alpha=0.2f);Priority.P1->MintifiColors.WarnAmber.copy(alpha=0.2f);Priority.P2->MintifiColors.AccentBlue.copy(alpha=0.2f);Priority.P3->MintifiColors.SuccessGreen.copy(alpha=0.2f)},selectedLabelColor=when(p){Priority.P0->MintifiColors.DangerRed;Priority.P1->MintifiColors.WarnAmber;Priority.P2->MintifiColors.AccentBlue;Priority.P3->MintifiColors.SuccessGreen},containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary))
+                    val sel = p in filter.priorities
+                    FilterChip(selected=sel, onClick={viewModel.togglePriority(p)}, label={Text(p.label,style=MaterialTheme.typography.labelSmall,fontWeight=if(sel)FontWeight.Bold else FontWeight.Normal)}, colors=FilterChipDefaults.filterChipColors(selectedContainerColor=when(p){Priority.P0->MintifiColors.DangerRed.copy(alpha=0.2f);Priority.P1->MintifiColors.WarnAmber.copy(alpha=0.2f);Priority.P2->MintifiColors.AccentBlue.copy(alpha=0.2f);else->MintifiColors.SuccessGreen.copy(alpha=0.2f)},selectedLabelColor=when(p){Priority.P0->MintifiColors.DangerRed;Priority.P1->MintifiColors.WarnAmber;Priority.P2->MintifiColors.AccentBlue;else->MintifiColors.SuccessGreen},containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary))
                 }
             }
-
-            // Status multi-select
-            Text("Status (select multiple):", style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextMuted)
+            Text("Status:", style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextMuted)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                listOf(TaskStatus.PENDING, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED, TaskStatus.WAITING, TaskStatus.ESCALATED).forEach { s ->
-                    val selected = s in filter.statuses
-                    FilterChip(selected=selected, onClick={viewModel.toggleStatus(s)}, label={Text(s.label, style=MaterialTheme.typography.labelSmall)}, colors=FilterChipDefaults.filterChipColors(selectedContainerColor=MintifiColors.Accent.copy(alpha=0.15f),selectedLabelColor=MintifiColors.Accent,containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary))
+                listOf(TaskStatus.PENDING,TaskStatus.IN_PROGRESS,TaskStatus.COMPLETED,TaskStatus.WAITING,TaskStatus.ESCALATED).forEach { s ->
+                    val sel = s in filter.statuses
+                    FilterChip(selected=sel, onClick={viewModel.toggleStatus(s)}, label={Text(s.label,style=MaterialTheme.typography.labelSmall)}, colors=FilterChipDefaults.filterChipColors(selectedContainerColor=MintifiColors.Accent.copy(alpha=0.15f),selectedLabelColor=MintifiColors.Accent,containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary))
                 }
             }
-
-            // Active filter summary
             if (filter.priorities.isNotEmpty() || filter.statuses.isNotEmpty()) {
-                val summary = buildString {
-                    if (filter.priorities.isNotEmpty()) append(filter.priorities.joinToString("+") { it.label })
-                    if (filter.statuses.isNotEmpty()) { if (isNotEmpty()) append(" + "); append(filter.statuses.joinToString("+") { it.label }) }
-                    append(" — " + tasks.size + " tasks")
+                val f = buildString {
+                    if(filter.priorities.isNotEmpty()) append(filter.priorities.joinToString("+"){it.label})
+                    if(filter.statuses.isNotEmpty()){if(isNotEmpty())append(" + ");append(filter.statuses.joinToString("+"){it.label})}
+                    append(" — ${tasks.size} tasks")
                 }
-                Text(summary, style=MaterialTheme.typography.labelSmall, color=MintifiColors.Accent, fontFamily=FontFamily.Monospace)
+                Text(f, style=MaterialTheme.typography.labelSmall, color=MintifiColors.Accent, fontFamily=FontFamily.Monospace)
             }
         }
         Divider(color=MintifiColors.Border, thickness=0.5.dp)
 
         if (tasks.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment=Alignment.Center) { Column(horizontalAlignment=Alignment.CenterHorizontally) { Text("No tasks match filters", style=MaterialTheme.typography.titleSmall, color=MintifiColors.TextSecondary); Text("Adjust filters or record a CEO call", style=MaterialTheme.typography.bodySmall, color=MintifiColors.TextMuted) } }
+            Box(Modifier.fillMaxSize(), contentAlignment=Alignment.Center) { Column(horizontalAlignment=Alignment.CenterHorizontally) { Text("No tasks match filters",style=MaterialTheme.typography.titleSmall,color=MintifiColors.TextSecondary); Text("Adjust filters or record a CEO call",style=MaterialTheme.typography.bodySmall,color=MintifiColors.TextMuted) } }
         } else {
-            // Group by project
             val grouped = tasks.groupBy { it.projectGroup }
             LazyColumn(contentPadding=PaddingValues(16.dp), verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 grouped.forEach { (project, projectTasks) ->
                     item {
-                        Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp), verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.FolderOpen, null, tint=MintifiColors.Accent, modifier=Modifier.size(16.dp))
-                            Text(project, style=MaterialTheme.typography.titleSmall, color=MintifiColors.Accent)
-                            Box(Modifier.background(MintifiColors.Accent.copy(alpha=0.1f), RoundedCornerShape(10.dp)).padding(horizontal=8.dp,vertical=2.dp)) {
-                                Text(projectTasks.size.toString() + " tasks", style=MaterialTheme.typography.labelSmall, color=MintifiColors.Accent, fontFamily=FontFamily.Monospace)
-                            }
+                        Row(Modifier.fillMaxWidth().padding(top=8.dp,bottom=4.dp), verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.FolderOpen,null,tint=MintifiColors.Accent,modifier=Modifier.size(16.dp))
+                            Text(project,style=MaterialTheme.typography.titleSmall,color=MintifiColors.Accent)
+                            Box(Modifier.background(MintifiColors.Accent.copy(alpha=0.1f),RoundedCornerShape(10.dp)).padding(horizontal=8.dp,vertical=2.dp)){Text(projectTasks.size.toString()+" tasks",style=MaterialTheme.typography.labelSmall,color=MintifiColors.Accent,fontFamily=FontFamily.Monospace)}
                             Spacer(Modifier.weight(1f))
-                            // Session identifier
-                            projectTasks.firstOrNull()?.let { t ->
-                                Text("Session #" + t.sessionId, style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextMuted, fontFamily=FontFamily.Monospace)
-                            }
+                            projectTasks.firstOrNull()?.let { t -> Text("Session #"+t.sessionId,style=MaterialTheme.typography.labelSmall,color=MintifiColors.TextMuted,fontFamily=FontFamily.Monospace) }
                         }
                     }
                     items(projectTasks, key={it.id}) { task ->
-                        EnhancedTaskCard(task=task, onStatusChange={viewModel.updateTaskStatus(task.id, it)}, fmt=fmt)
+                        EditableTaskCard(task=task, onStatusChange={viewModel.updateTaskStatus(task.id,it)}, onEdit={taskToEdit=task}, onDelete={taskToDelete=task}, fmt=fmt)
                     }
                 }
                 item { Spacer(Modifier.height(80.dp)) }
             }
         }
     }
+
+    // Edit task bottom sheet
+    taskToEdit?.let { task ->
+        EditTaskSheet(task=task, onSave={ updated -> viewModel.updateTask(updated); taskToEdit=null }, onDismiss={ taskToEdit=null })
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EnhancedTaskCard(task: Task, onStatusChange: (TaskStatus) -> Unit, fmt: SimpleDateFormat) {
+private fun EditableTaskCard(task: Task, onStatusChange: (TaskStatus)->Unit, onEdit: ()->Unit, onDelete: ()->Unit, fmt: SimpleDateFormat) {
     var expanded by remember { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth().clickable{expanded=!expanded}, colors=CardDefaults.cardColors(containerColor=MintifiColors.Surface), shape=RoundedCornerShape(10.dp), border=BorderStroke(0.5.dp,MintifiColors.Border)) {
         Column(Modifier.padding(12.dp), verticalArrangement=Arrangement.spacedBy(6.dp)) {
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp), verticalAlignment=Alignment.Top) {
                 PriorityBadge(task.priority)
                 Column(Modifier.weight(1f)) {
-                    Text(task.title, style=MaterialTheme.typography.titleSmall, color=MintifiColors.TextPrimary)
-                    Row(horizontalArrangement=Arrangement.spacedBy(6.dp), verticalAlignment=Alignment.CenterVertically) {
-                        CategoryChip(task.category); StatusChip(task.status)
-                    }
+                    Text(task.title,style=MaterialTheme.typography.titleSmall,color=MintifiColors.TextPrimary)
+                    Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){CategoryChip(task.category);StatusChip(task.status)}
                 }
+                // Edit button
+                IconButton(onClick=onEdit, modifier=Modifier.size(28.dp)) { Icon(Icons.Default.Edit,"Edit",tint=MintifiColors.Accent,modifier=Modifier.size(14.dp)) }
+                // Delete button
+                IconButton(onClick=onDelete, modifier=Modifier.size(28.dp)) { Icon(Icons.Default.Delete,"Delete",tint=MintifiColors.DangerRed.copy(alpha=0.7f),modifier=Modifier.size(14.dp)) }
             }
-            // DateTime + owner + deadline row
-            Row(horizontalArrangement=Arrangement.spacedBy(10.dp), verticalAlignment=Alignment.CenterVertically) {
-                Icon(Icons.Default.AccessTime, null, tint=MintifiColors.TextMuted, modifier=Modifier.size(11.dp))
-                Text(fmt.format(Date(task.createdAt)), style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextMuted, fontFamily=FontFamily.Monospace)
-                Text("·", color=MintifiColors.TextMuted)
-                Text(task.owner, style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextMuted, fontFamily=FontFamily.Monospace)
-                Text("·", color=MintifiColors.TextMuted)
-                Text(task.deadline, style=MaterialTheme.typography.labelSmall, color=MintifiColors.WarnAmber, fontFamily=FontFamily.Monospace)
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp), verticalAlignment=Alignment.CenterVertically) {
+                Icon(Icons.Default.AccessTime,null,tint=MintifiColors.TextMuted,modifier=Modifier.size(11.dp))
+                Text(fmt.format(Date(task.createdAt)),style=MaterialTheme.typography.labelSmall,color=MintifiColors.TextMuted,fontFamily=FontFamily.Monospace)
+                Text("·",color=MintifiColors.TextMuted)
+                Text(task.owner,style=MaterialTheme.typography.labelSmall,color=MintifiColors.TextMuted,fontFamily=FontFamily.Monospace)
+                Text("·",color=MintifiColors.TextMuted)
+                Text(task.deadline,style=MaterialTheme.typography.labelSmall,color=MintifiColors.WarnAmber,fontFamily=FontFamily.Monospace)
             }
             if (expanded) {
-                Divider(color=MintifiColors.Border, thickness=0.5.dp)
-                if (task.detail.isNotBlank()) Text(task.detail, style=MaterialTheme.typography.bodySmall, color=MintifiColors.TextPrimary)
-                Text("Update Status:", style=MaterialTheme.typography.labelSmall, color=MintifiColors.TextSecondary)
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                    TaskStatus.values().forEach { s -> FilterChip(selected=s==task.status, onClick={onStatusChange(s)}, label={Text(s.label, style=MaterialTheme.typography.labelSmall)}, colors=FilterChipDefaults.filterChipColors(selectedContainerColor=MintifiColors.Accent.copy(alpha=0.12f),selectedLabelColor=MintifiColors.Accent,containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary)) }
+                Divider(color=MintifiColors.Border,thickness=0.5.dp)
+                if(task.detail.isNotBlank()) Text(task.detail,style=MaterialTheme.typography.bodySmall,color=MintifiColors.TextPrimary)
+                Text("Update Status:",style=MaterialTheme.typography.labelSmall,color=MintifiColors.TextSecondary)
+                Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                    TaskStatus.values().forEach{s->FilterChip(selected=s==task.status,onClick={onStatusChange(s)},label={Text(s.label,style=MaterialTheme.typography.labelSmall)},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=MintifiColors.Accent.copy(alpha=0.12f),selectedLabelColor=MintifiColors.Accent,containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary))}
                 }
+            }
+        }
+    }
+}
+
+// ── Edit Task Sheet ───────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditTaskSheet(task: Task, onSave: (Task)->Unit, onDismiss: ()->Unit) {
+    var title    by remember { mutableStateOf(task.title) }
+    var detail   by remember { mutableStateOf(task.detail) }
+    var priority by remember { mutableStateOf(task.priority) }
+    var status   by remember { mutableStateOf(task.status) }
+    var deadline by remember { mutableStateOf(task.deadline) }
+    var owner    by remember { mutableStateOf(task.owner) }
+    var category by remember { mutableStateOf(task.category) }
+    var project  by remember { mutableStateOf(task.projectGroup) }
+
+    ModalBottomSheet(onDismissRequest=onDismiss, containerColor=MintifiColors.Surface, dragHandle={Box(Modifier.padding(8.dp).width(40.dp).height(4.dp).background(MintifiColors.Border,RoundedCornerShape(2.dp)))}) {
+        Column(Modifier.fillMaxWidth().padding(horizontal=20.dp).padding(bottom=32.dp).verticalScroll(rememberScrollState()), verticalArrangement=Arrangement.spacedBy(14.dp)) {
+            Text("Edit Task", style=MaterialTheme.typography.headlineSmall, color=MintifiColors.TextPrimary)
+
+            OutlinedTextField(value=title, onValueChange={title=it}, label={Text("Task Title")}, modifier=Modifier.fillMaxWidth(), shape=RoundedCornerShape(10.dp), colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=MintifiColors.Accent,unfocusedBorderColor=MintifiColors.Border,focusedTextColor=MintifiColors.TextPrimary,unfocusedTextColor=MintifiColors.TextPrimary,cursorColor=MintifiColors.Accent,focusedContainerColor=MintifiColors.Surface,unfocusedContainerColor=MintifiColors.Surface))
+            OutlinedTextField(value=detail, onValueChange={detail=it}, label={Text("Details")}, modifier=Modifier.fillMaxWidth().height(80.dp), shape=RoundedCornerShape(10.dp), colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=MintifiColors.Accent,unfocusedBorderColor=MintifiColors.Border,focusedTextColor=MintifiColors.TextPrimary,unfocusedTextColor=MintifiColors.TextPrimary,cursorColor=MintifiColors.Accent,focusedContainerColor=MintifiColors.Surface,unfocusedContainerColor=MintifiColors.Surface))
+
+            Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(value=deadline, onValueChange={deadline=it}, label={Text("Deadline")}, modifier=Modifier.weight(1f), shape=RoundedCornerShape(10.dp), singleLine=true, colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=MintifiColors.Accent,unfocusedBorderColor=MintifiColors.Border,focusedTextColor=MintifiColors.TextPrimary,unfocusedTextColor=MintifiColors.TextPrimary,cursorColor=MintifiColors.Accent,focusedContainerColor=MintifiColors.Surface,unfocusedContainerColor=MintifiColors.Surface))
+                OutlinedTextField(value=owner, onValueChange={owner=it}, label={Text("Owner")}, modifier=Modifier.weight(1f), shape=RoundedCornerShape(10.dp), singleLine=true, colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=MintifiColors.Accent,unfocusedBorderColor=MintifiColors.Border,focusedTextColor=MintifiColors.TextPrimary,unfocusedTextColor=MintifiColors.TextPrimary,cursorColor=MintifiColors.Accent,focusedContainerColor=MintifiColors.Surface,unfocusedContainerColor=MintifiColors.Surface))
+            }
+
+            OutlinedTextField(value=project, onValueChange={project=it}, label={Text("Project Group")}, modifier=Modifier.fillMaxWidth(), shape=RoundedCornerShape(10.dp), singleLine=true, colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=MintifiColors.Accent,unfocusedBorderColor=MintifiColors.Border,focusedTextColor=MintifiColors.TextPrimary,unfocusedTextColor=MintifiColors.TextPrimary,cursorColor=MintifiColors.Accent,focusedContainerColor=MintifiColors.Surface,unfocusedContainerColor=MintifiColors.Surface))
+
+            Text("Priority:", style=MaterialTheme.typography.labelMedium, color=MintifiColors.TextSecondary)
+            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                Priority.values().forEach { p -> FilterChip(selected=priority==p, onClick={priority=p}, label={Text(p.label,style=MaterialTheme.typography.labelSmall)}, colors=FilterChipDefaults.filterChipColors(selectedContainerColor=MintifiColors.Accent.copy(alpha=0.15f),selectedLabelColor=MintifiColors.Accent,containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary)) }
+            }
+
+            Text("Status:", style=MaterialTheme.typography.labelMedium, color=MintifiColors.TextSecondary)
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                TaskStatus.values().forEach { s -> FilterChip(selected=status==s, onClick={status=s}, label={Text(s.label,style=MaterialTheme.typography.labelSmall)}, colors=FilterChipDefaults.filterChipColors(selectedContainerColor=MintifiColors.Accent.copy(alpha=0.15f),selectedLabelColor=MintifiColors.Accent,containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary)) }
+            }
+
+            Text("Category:", style=MaterialTheme.typography.labelMedium, color=MintifiColors.TextSecondary)
+            LazyRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                items(Category.values()) { c -> FilterChip(selected=category==c, onClick={category=c}, label={Text(c.emoji+" "+c.label,style=MaterialTheme.typography.labelSmall)}, colors=FilterChipDefaults.filterChipColors(selectedContainerColor=MintifiColors.Accent.copy(alpha=0.15f),selectedLabelColor=MintifiColors.Accent,containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary)) }
+            }
+
+            Button(onClick={ onSave(task.copy(title=title,detail=detail,priority=priority,status=status,deadline=deadline,owner=owner,category=category,projectGroup=project)) }, modifier=Modifier.fillMaxWidth(), enabled=title.isNotBlank(), colors=ButtonDefaults.buttonColors(containerColor=MintifiColors.Accent), shape=RoundedCornerShape(10.dp)) {
+                Icon(Icons.Default.Save, null, tint=Color.White); Spacer(Modifier.width(8.dp)); Text("Save Changes", color=Color.White, fontWeight=FontWeight.SemiBold)
             }
         }
     }
@@ -405,7 +524,7 @@ fun CopilotScreen(viewModel: MainViewModel) {
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.background(MintifiColors.Surface).padding(horizontal=16.dp,vertical=12.dp)) {
             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                Image(painter=painterResource(id=R.drawable.mintifi_logo), contentDescription="Mintifi", modifier=Modifier.height(22.dp))
+                Image(painter=painterResource(id=R.drawable.mintifi_logo),contentDescription="Mintifi",modifier=Modifier.height(22.dp))
                 Column{Text("AI Copilot",style=MaterialTheme.typography.titleMedium,color=MintifiColors.TextPrimary);Text("Hindi + English supported",style=MaterialTheme.typography.bodySmall,color=MintifiColors.TextSecondary)}
             }
             Spacer(Modifier.height(8.dp))
@@ -448,7 +567,7 @@ fun RemindersScreen(viewModel: MainViewModel) {
             Column(Modifier.background(MintifiColors.Surface).padding(16.dp)){Text("Smart Reminders",style=MaterialTheme.typography.headlineSmall,color=MintifiColors.TextPrimary);Text(reminders.count{it.isActive}.toString()+" active",style=MaterialTheme.typography.bodySmall,color=MintifiColors.TextSecondary)}
             Divider(color=MintifiColors.Border,thickness=0.5.dp)
             LazyColumn(contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
-                item{Card(colors=CardDefaults.cardColors(containerColor=MintifiColors.Accent.copy(alpha=0.08f)),border=BorderStroke(0.5.dp,MintifiColors.Accent.copy(alpha=0.3f)),shape=RoundedCornerShape(10.dp)){Row(Modifier.padding(12.dp),horizontalArrangement=Arrangement.spacedBy(10.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Load Pradeep Preset Reminders",style=MaterialTheme.typography.titleSmall,color=MintifiColors.Accent);Text("CEO call prep, DDR daily, MBA study, EOD wrap",style=MaterialTheme.typography.bodySmall,color=MintifiColors.TextSecondary)};TextButton(onClick={viewModel.loadPresetReminders()},colors=ButtonDefaults.textButtonColors(contentColor=MintifiColors.Accent)){Text("Load")}}}}
+                item{Card(colors=CardDefaults.cardColors(containerColor=MintifiColors.Accent.copy(alpha=0.08f)),border=BorderStroke(0.5.dp,MintifiColors.Accent.copy(alpha=0.3f)),shape=RoundedCornerShape(10.dp)){Row(Modifier.padding(12.dp),horizontalArrangement=Arrangement.spacedBy(10.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Load Preset Reminders",style=MaterialTheme.typography.titleSmall,color=MintifiColors.Accent);Text("CEO prep, DDR daily, MBA study, EOD wrap",style=MaterialTheme.typography.bodySmall,color=MintifiColors.TextSecondary)};TextButton(onClick={viewModel.loadPresetReminders()},colors=ButtonDefaults.textButtonColors(contentColor=MintifiColors.Accent)){Text("Load")}}}}
                 if(reminders.isEmpty())item{Box(Modifier.fillMaxWidth().padding(40.dp),contentAlignment=Alignment.Center){Text("No reminders yet",style=MaterialTheme.typography.titleSmall,color=MintifiColors.TextSecondary)}}
                 items(reminders,key={it.id}){rem->
                     Card(colors=CardDefaults.cardColors(containerColor=if(rem.isActive)MintifiColors.Surface else MintifiColors.Surface2),shape=RoundedCornerShape(12.dp),border=BorderStroke(0.5.dp,MintifiColors.Border),modifier=Modifier.fillMaxWidth()){
@@ -491,7 +610,7 @@ private fun AddReminderSheet(existing: Reminder?, onSave: (Reminder)->Unit, onDi
     }
 }
 
-// ── Todo ──────────────────────────────────────────────────────────────────────
+// ── Todo with delete ──────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -502,7 +621,20 @@ fun TodoScreen(viewModel: MainViewModel) {
     var showTemplates by remember{mutableStateOf(false)}
     var newTitle      by remember{mutableStateOf("")}
     var newPriority   by remember{mutableStateOf(TodoPriority.NORMAL)}
+    var todoToDelete  by remember{mutableStateOf<TodoItem?>(null)}
     val filtered=allTodos.filter{it.listType==selectedList}; val pending=filtered.filter{!it.isCompleted}; val completed=filtered.filter{it.isCompleted}
+
+    // Delete confirmation
+    todoToDelete?.let { todo ->
+        AlertDialog(
+            onDismissRequest = { todoToDelete = null },
+            title = { Text("Delete Task?") },
+            text = { Text("\"" + todo.title + "\" will be deleted.") },
+            confirmButton = { TextButton(onClick = { viewModel.deleteTodo(todo); todoToDelete = null }, colors = ButtonDefaults.textButtonColors(contentColor = MintifiColors.DangerRed)) { Text("Delete") } },
+            dismissButton = { TextButton(onClick = { todoToDelete = null }) { Text("Cancel") } }
+        )
+    }
+
     Box(Modifier.fillMaxSize()){
         Column(Modifier.fillMaxSize()){
             Column(Modifier.background(MintifiColors.Surface).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
@@ -513,8 +645,13 @@ fun TodoScreen(viewModel: MainViewModel) {
             if(showAdd){Card(Modifier.fillMaxWidth().padding(16.dp),colors=CardDefaults.cardColors(containerColor=MintifiColors.Surface),border=BorderStroke(0.5.dp,MintifiColors.Accent.copy(alpha=0.4f)),shape=RoundedCornerShape(12.dp)){Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){OutlinedTextField(value=newTitle,onValueChange={newTitle=it},placeholder={Text("Task title...",color=MintifiColors.TextMuted)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(8.dp),colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=MintifiColors.Accent,unfocusedBorderColor=MintifiColors.Border,focusedTextColor=MintifiColors.TextPrimary,unfocusedTextColor=MintifiColors.TextPrimary,cursorColor=MintifiColors.Accent,focusedContainerColor=MintifiColors.Surface,unfocusedContainerColor=MintifiColors.Surface),singleLine=true);Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){TodoPriority.values().forEach{p->FilterChip(selected=newPriority==p,onClick={newPriority=p},label={Text(p.label,style=MaterialTheme.typography.labelSmall)},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=MintifiColors.Accent.copy(alpha=0.15f),selectedLabelColor=MintifiColors.Accent,containerColor=MintifiColors.Surface2,labelColor=MintifiColors.TextSecondary))}};Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={if(newTitle.isNotBlank()){viewModel.addTodo(TodoItem(title=newTitle,listType=selectedList,priority=newPriority));newTitle="";showAdd=false}},colors=ButtonDefaults.buttonColors(containerColor=MintifiColors.Accent),shape=RoundedCornerShape(8.dp),modifier=Modifier.weight(1f)){Text("Add Task",color=Color.White)};OutlinedButton(onClick={showAdd=false;newTitle=""},border=BorderStroke(0.5.dp,MintifiColors.Border),shape=RoundedCornerShape(8.dp)){Text("Cancel")}}}}}
             LazyColumn(contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
                 if(pending.isEmpty()&&completed.isEmpty())item{Box(Modifier.fillMaxWidth().padding(40.dp),contentAlignment=Alignment.Center){Column(horizontalAlignment=Alignment.CenterHorizontally){Text(selectedList.emoji,fontSize=36.sp);Spacer(Modifier.height(8.dp));Text(selectedList.label+" is empty",style=MaterialTheme.typography.titleSmall,color=MintifiColors.TextSecondary)}}}
-                items(pending,key={it.id}){todo->TodoCard(todo,onCheck={viewModel.toggleTodo(todo.id,true)},onDelete={viewModel.deleteTodo(todo)})}
-                if(completed.isNotEmpty()){item{Row(Modifier.fillMaxWidth().padding(top=8.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("Completed ("+completed.size+")",style=MaterialTheme.typography.labelMedium,color=MintifiColors.TextMuted);TextButton(onClick={viewModel.clearCompleted(selectedList)},colors=ButtonDefaults.textButtonColors(contentColor=MintifiColors.DangerRed)){Text("Clear")}}};items(completed,key={it.id}){todo->TodoCard(todo,onCheck={viewModel.toggleTodo(todo.id,false)},onDelete={viewModel.deleteTodo(todo)},done=true)}}
+                items(pending,key={it.id}){todo->
+                    TodoCard(todo=todo, onCheck={viewModel.toggleTodo(todo.id,true)}, onDelete={todoToDelete=todo})
+                }
+                if(completed.isNotEmpty()){
+                    item{Row(Modifier.fillMaxWidth().padding(top=8.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("Completed ("+completed.size+")",style=MaterialTheme.typography.labelMedium,color=MintifiColors.TextMuted);TextButton(onClick={viewModel.clearCompleted(selectedList)},colors=ButtonDefaults.textButtonColors(contentColor=MintifiColors.DangerRed)){Text("Clear All")}}}
+                    items(completed,key={it.id}){todo->TodoCard(todo=todo,onCheck={viewModel.toggleTodo(todo.id,false)},onDelete={todoToDelete=todo},done=true)}
+                }
                 item{Spacer(Modifier.height(80.dp))}
             }
         }
@@ -529,7 +666,10 @@ private fun TodoCard(todo: TodoItem, onCheck: ()->Unit, onDelete: ()->Unit, done
         Row(Modifier.padding(12.dp),horizontalArrangement=Arrangement.spacedBy(10.dp),verticalAlignment=Alignment.CenterVertically){
             Checkbox(checked=done,onCheckedChange={onCheck()},colors=CheckboxDefaults.colors(checkedColor=MintifiColors.SuccessGreen,uncheckedColor=MintifiColors.Border,checkmarkColor=Color.White))
             Text(todo.title,style=MaterialTheme.typography.bodyMedium,color=if(done)MintifiColors.TextMuted else MintifiColors.TextPrimary,textDecoration=if(done)TextDecoration.LineThrough else null,modifier=Modifier.weight(1f))
-            if(!done)IconButton(onClick=onDelete,modifier=Modifier.size(28.dp)){Icon(Icons.Default.Close,null,tint=MintifiColors.TextMuted,modifier=Modifier.size(14.dp))}
+            // Delete button always visible
+            IconButton(onClick=onDelete, modifier=Modifier.size(30.dp)) {
+                Icon(Icons.Default.Delete,"Delete",tint=MintifiColors.DangerRed.copy(alpha=if(done)0.4f else 0.7f),modifier=Modifier.size(16.dp))
+            }
         }
     }
 }
@@ -551,37 +691,30 @@ private fun TemplatesSheet(onSelect: (WorkTemplate)->Unit, onDismiss: ()->Unit) 
 fun SettingsScreen() {
     val context=LocalContext.current; val scope=rememberCoroutineScope()
     val prefs=remember{context.getSharedPreferences("ceo_os_prefs",Context.MODE_PRIVATE)}
-    var geminiKey   by remember{mutableStateOf(prefs.getString("gemini_key","") ?: "")}
-    var groqKey     by remember{mutableStateOf(prefs.getString("groq_key","") ?: "")}
+    var geminiKey    by remember{mutableStateOf(prefs.getString("gemini_key","") ?: "")}
+    var groqKey      by remember{mutableStateOf(prefs.getString("groq_key","") ?: "")}
     var anthropicKey by remember{mutableStateOf(prefs.getString("anthropic_key","") ?: "")}
-    var deepgramKey by remember{mutableStateOf(prefs.getString("deepgram_key","") ?: "")}
-    var showKeys    by remember{mutableStateOf(false)}
-    var saved       by remember{mutableStateOf(false)}
+    var deepgramKey  by remember{mutableStateOf(prefs.getString("deepgram_key","") ?: "")}
+    var showKeys     by remember{mutableStateOf(false)}
+    var saved        by remember{mutableStateOf(false)}
 
     Column(Modifier.fillMaxSize().background(MintifiColors.Background).verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(20.dp)){
-        Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
-            Image(painter=painterResource(id=R.drawable.mintifi_logo),contentDescription="Mintifi",modifier=Modifier.height(32.dp))
-        }
+        Row(verticalAlignment=Alignment.CenterVertically){Image(painter=painterResource(id=R.drawable.mintifi_logo),contentDescription="Mintifi",modifier=Modifier.height(32.dp))}
         Text("CEO OS Settings",style=MaterialTheme.typography.headlineSmall,color=MintifiColors.TextPrimary)
-
-        SSection("AI Keys — All free options available"){
+        SSection("AI Keys — Free keys available"){
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("Show keys",color=MintifiColors.TextSecondary);Switch(checked=showKeys,onCheckedChange={showKeys=it},colors=SwitchDefaults.colors(checkedThumbColor=Color.White,checkedTrackColor=MintifiColors.Accent))}
-            SKeyField("Gemini API Key — FREE (ai.google.dev)",geminiKey,"AIzaSy...",showKeys){geminiKey=it}
-            SKeyField("Groq API Key — FREE (console.groq.com)",groqKey,"gsk_...",showKeys){groqKey=it}
+            SKeyField("Gemini Key — FREE (ai.google.dev)",geminiKey,"AIzaSy...",showKeys){geminiKey=it}
+            SKeyField("Groq Key — FREE (console.groq.com)",groqKey,"gsk_...",showKeys){groqKey=it}
             SKeyField("Anthropic Key — PAID optional",anthropicKey,"sk-ant-...",showKeys){anthropicKey=it}
-            SKeyField("Deepgram Key — PAID (better Indian English)",deepgramKey,"deepgram...",showKeys){deepgramKey=it}
+            SKeyField("Deepgram Key — PAID (Indian English)",deepgramKey,"deepgram...",showKeys){deepgramKey=it}
         }
-        SSection("Language Support"){
-            SInfoRow("Transcription","Hindi, English, Hinglish auto-detected")
-            SInfoRow("Task Extraction","Understands mixed Hindi-English")
-            SInfoRow("AI Copilot","Ask in Hindi or English")
-            SInfoRow("Summary","Always generated in English")
-        }
-        SSection("Features"){
-            SInfoRow("Meeting Summary","Auto-generated after every recording")
+        SSection("Features Active"){
+            SInfoRow("Hindi + English","Auto-detected in all recordings")
+            SInfoRow("Offline Mode","Queues recordings when no internet")
+            SInfoRow("Task Edit","Edit any task after AI creates it")
+            SInfoRow("Task Delete","Delete from Home, Tasks, To-Do")
             SInfoRow("Project Groups","Tasks grouped by discussion topic")
-            SInfoRow("Session Links","Each task shows which session it came from")
-            SInfoRow("Date/Time Stamps","All tasks have creation timestamp")
+            SInfoRow("Meeting Summary","Auto-generated after recording")
         }
         Button(onClick={scope.launch{prefs.edit().putString("gemini_key",geminiKey).putString("groq_key",groqKey).putString("anthropic_key",anthropicKey).putString("deepgram_key",deepgramKey).apply();saved=true}},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=MintifiColors.Accent),shape=RoundedCornerShape(10.dp)){Icon(if(saved)Icons.Default.CheckCircle else Icons.Default.Save,null,tint=Color.White);Spacer(Modifier.width(8.dp));Text(if(saved)"Saved!" else "Save Settings",color=Color.White)}
         Spacer(Modifier.height(80.dp))
