@@ -4,10 +4,13 @@ import android.app.*
 import android.content.Intent
 import android.media.MediaRecorder
 import android.os.Build
+import android.os.Environment
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import timber.log.Timber
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 class RecordingService : Service() {
 
@@ -33,14 +36,19 @@ class RecordingService : Service() {
                 ACTION_RESUME -> resumeRecording()
             }
         } catch (e: Exception) {
-            Timber.e(e, "RecordingService error on action: ${intent?.action}")
+            Timber.e(e, "RecordingService error")
         }
         return START_NOT_STICKY
     }
 
     private fun startRecording() {
         try {
-            val file = File(cacheDir, "rec_" + System.currentTimeMillis() + ".m4a")
+            // Save to app-private recordings folder (persistent, not cache)
+            val recordingsDir = File(filesDir, "recordings")
+            if (!recordingsDir.exists()) recordingsDir.mkdirs()
+
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val file = File(recordingsDir, "CEO_OS_$timestamp.m4a")
             currentFilePath = file.absolutePath
             isRecordingActive = true
 
@@ -60,14 +68,12 @@ class RecordingService : Service() {
             rec.start()
             recorder = rec
 
-            startForeground(
-                1,
+            startForeground(1,
                 NotificationCompat.Builder(this, "recording_channel")
                     .setContentTitle("CEO OS — Recording")
                     .setContentText("Tap to return to app")
                     .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-                    .setOngoing(true)
-                    .build()
+                    .setOngoing(true).build()
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to start recording")
@@ -80,11 +86,25 @@ class RecordingService : Service() {
     private fun stopRecording() {
         isRecordingActive = false
         safeStopRecorder()
-        try {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-        } catch (e: Exception) {
-            Timber.e(e, "stopForeground error")
+
+        // Copy to Downloads folder for user access
+        currentFilePath?.let { path ->
+            try {
+                val src = File(path)
+                if (src.exists() && src.length() > 0) {
+                    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    val ceoOsDir = File(downloadsDir, "CEO_OS_Recordings")
+                    if (!ceoOsDir.exists()) ceoOsDir.mkdirs()
+                    val dst = File(ceoOsDir, src.name)
+                    src.copyTo(dst, overwrite = true)
+                    Timber.d("Copied recording to Downloads: ${dst.absolutePath}")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to copy to Downloads")
+            }
         }
+
+        try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (e: Exception) { Timber.e(e) }
         stopSelf()
     }
 
@@ -101,20 +121,12 @@ class RecordingService : Service() {
     }
 
     private fun safeStopRecorder() {
-        try {
-            recorder?.stop()
-        } catch (e: Exception) {
-            Timber.e(e, "recorder.stop() error — file may be incomplete")
-        }
+        try { recorder?.stop() } catch (e: Exception) { Timber.e(e, "stop error") }
         safeReleaseRecorder()
     }
 
     private fun safeReleaseRecorder() {
-        try {
-            recorder?.release()
-        } catch (e: Exception) {
-            Timber.e(e, "recorder.release() error")
-        }
+        try { recorder?.release() } catch (e: Exception) { Timber.e(e, "release error") }
         recorder = null
     }
 

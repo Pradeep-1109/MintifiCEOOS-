@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit
 class ApiService(private val context: Context) {
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
     private fun prefs() = context.getSharedPreferences("ceo_os_prefs", Context.MODE_PRIVATE)
@@ -31,12 +31,14 @@ class ApiService(private val context: Context) {
     private fun anthropicKey() = prefs().getString("anthropic_key", "") ?: ""
     private fun deepgramKey()  = prefs().getString("deepgram_key", "") ?: ""
 
+    // ── Transcription ─────────────────────────────────────────────────────────
+
     suspend fun transcribeAudio(file: File): String = withContext(Dispatchers.IO) {
         val groq = groqKey()
         if (groq.isNotBlank()) return@withContext transcribeGroq(file, groq)
         val dg = deepgramKey()
         if (dg.isNotBlank()) return@withContext transcribeDeepgram(file, dg)
-        throw Exception("No transcription key. Add Groq key (free) in Settings.")
+        throw Exception("No transcription key. Add Groq key (free at console.groq.com) in Settings.")
     }
 
     private fun transcribeGroq(file: File, key: String): String {
@@ -49,12 +51,14 @@ class ApiService(private val context: Context) {
             .url("https://api.groq.com/openai/v1/audio/transcriptions")
             .header("Authorization", "Bearer " + key)
             .post(body).build()
-        return JSONObject(client.newCall(req).execute().body!!.string()).optString("text", "")
+        val resp = client.newCall(req).execute()
+        val json = JSONObject(resp.body!!.string())
+        return json.optString("text", "")
     }
 
     private fun transcribeDeepgram(file: File, key: String): String {
         val req = Request.Builder()
-            .url("https://api.deepgram.com/v1/listen?model=nova-2&language=hi-en&punctuate=true&diarize=true&detect_language=true")
+            .url("https://api.deepgram.com/v1/listen?model=nova-2&language=hi-en&punctuate=true&detect_language=true")
             .header("Authorization", "Token " + key)
             .post(RequestBody.create("audio/m4a".toMediaType(), file)).build()
         val json = JSONObject(client.newCall(req).execute().body!!.string())
@@ -63,48 +67,79 @@ class ApiService(private val context: Context) {
             .getJSONObject(0).optString("transcript", "")
     }
 
+    // ── Summary ───────────────────────────────────────────────────────────────
+
     suspend fun generateSummary(transcript: String): String = withContext(Dispatchers.IO) {
-        val sections = "OVERVIEW: (2-3 sentences) | PROJECTS DISCUSSED: (bullet list) | KEY DECISIONS: (bullet list) | NEXT STEPS: (bullet list)"
-        val prompt = "You are analyzing a CEO meeting for Pradeep Singh at Mintifi Finserv. " +
-            "The text may be in English, Hindi, or Hinglish. Respond in English only. " +
-            "Generate a structured meeting summary with these sections: " + sections + ". " +
+        val prompt = "Analyze this CEO meeting for Pradeep Singh at Mintifi Finserv. " +
+            "Text may be English, Hindi, or Hinglish. Respond in English only. " +
+            "Generate structured summary with: OVERVIEW (2 sentences) | PROJECTS DISCUSSED (bullets) | KEY DECISIONS (bullets) | NEXT STEPS (bullets). " +
             "Transcript: " + transcript
         callBestAI(prompt)
     }
+
+    // ── Task Extraction ───────────────────────────────────────────────────────
 
     suspend fun analyzeTranscript(transcript: String, ctx: String = ""): List<Task> =
         withContext(Dispatchers.IO) {
             val fields = "title (English), detail (English), priority (P0/P1/P2/P3), " +
                 "category (CEO_ASK/DDR/LAP/COLLECTIONS/AI_PROJECTS/TREDS/MBA/GENERAL), " +
-                "owner, deadline, projectGroup (project or topic name)"
-            val prompt = "Analyze this CEO meeting for Pradeep Singh at Mintifi Finserv. " +
-                "The transcript may be in English, Hindi, or Hinglish - understand all. " +
-                "Extract ALL action items. Group related tasks under the same projectGroup. " +
-                "Return ONLY a JSON array. Each item must have: " + fields + ". " +
+                "owner, deadline, projectGroup (project or topic name, be consistent across sessions)"
+            val prompt = "You are analyzing a CEO meeting for Pradeep Singh at Mintifi Finserv. " +
+                "The transcript may be in English, Hindi, or Hinglish. Understand all. " +
+                "Extract EVERY action item mentioned. Return ONLY a JSON array. Each item: " +
+                fields + ". " +
+                "IMPORTANT: Use consistent projectGroup names (e.g. always 'DDR Automation' not 'DDR' sometimes). " +
                 "Context: " + ctx + " Transcript: " + transcript
             parseTasksFromResponse(callBestAI(prompt))
         }
+
+    // ── Briefing ──────────────────────────────────────────────────────────────
 
     suspend fun generateBriefing(tasks: List<Task>): String = withContext(Dispatchers.IO) {
         val lines = tasks.take(20).joinToString(" | ") { t ->
             "[" + t.priority.label + "] " + t.title
         }
         val prompt = "You are Pradeep Singh AI Chief of Staff at Mintifi Finserv. " +
-            "Generate a sharp executive morning briefing for these tasks: " + lines + ". " +
-            "Format: 2-3 sentences on priorities then 2-3 action items. Be concise."
+            "Generate a sharp executive morning briefing for these tasks: " + lines +
+            ". Format: 2-3 sentences on priorities then 2-3 action items. Be concise."
         callBestAI(prompt)
     }
+
+    // ── Copilot — Groq first for speed, brief first response ─────────────────
 
     suspend fun chatWithCopilot(
         messages: List<Pair<String, String>>,
         taskContext: String
     ): String = withContext(Dispatchers.IO) {
+        val isFirstMessage = messages.size <= 2
         val system = "You are the AI Chief of Staff for Pradeep Singh at Mintifi Finserv. " +
             "Mintifi does supply chain finance, lending, LAP, DDR automation, TReDS, collections. " +
-            "You understand Hindi, English, and Hinglish. " +
-            "Current tasks: " + taskContext + " Be concise and actionable."
-        callBestAIWithHistory(system, messages)
+            "You understand Hindi, English, and Hinglish but ALWAYS respond in English. " +
+            "Current tasks: " + taskContext + " " +
+            if (isFirstMessage) {
+                "IMPORTANT: Keep your FIRST response very brief — maximum 3 lines. Direct and to the point. " +
+                "If user asks for more detail, then elaborate. Do not over-explain on first response."
+            } else {
+                "User has asked a follow-up. Now you can give more detail if needed."
+            }
+        // Use Groq first — fastest response
+        val groq = groqKey()
+        if (groq.isNotBlank()) {
+            runCatching { return@withContext callGroqHistory(system, messages, groq) }
+        }
+        val gemini = geminiKey()
+        if (gemini.isNotBlank()) {
+            val combined = system + " " + messages.joinToString(" ") { m -> m.first + ": " + m.second }
+            runCatching { return@withContext callGemini(combined, gemini) }
+        }
+        val anthropic = anthropicKey()
+        if (anthropic.isNotBlank()) {
+            runCatching { return@withContext callAnthropicHistory(system, messages, anthropic) }
+        }
+        "No AI key configured. Add a free Groq key in Settings for fast responses."
     }
+
+    // ── AI Router ─────────────────────────────────────────────────────────────
 
     private fun callBestAI(prompt: String): String {
         val gemini = geminiKey()
@@ -113,21 +148,10 @@ class ApiService(private val context: Context) {
         if (groq.isNotBlank()) runCatching { return callGroq(prompt, groq) }
         val anthropic = anthropicKey()
         if (anthropic.isNotBlank()) runCatching { return callAnthropic(prompt, anthropic) }
-        return "No AI key configured. Add Gemini key (free at ai.google.dev) in Settings."
+        return "No AI key configured. Add Gemini or Groq key in Settings."
     }
 
-    private fun callBestAIWithHistory(system: String, messages: List<Pair<String, String>>): String {
-        val groq = groqKey()
-        if (groq.isNotBlank()) runCatching { return callGroqHistory(system, messages, groq) }
-        val gemini = geminiKey()
-        if (gemini.isNotBlank()) {
-            val combined = system + " " + messages.joinToString(" ") { m -> m.first + ": " + m.second }
-            runCatching { return callGemini(combined, gemini) }
-        }
-        val anthropic = anthropicKey()
-        if (anthropic.isNotBlank()) runCatching { return callAnthropicHistory(system, messages, anthropic) }
-        return "No AI key configured. Add a free Groq key in Settings."
-    }
+    // ── Gemini ────────────────────────────────────────────────────────────────
 
     private fun callGemini(prompt: String, key: String): String {
         val body = JSONObject()
@@ -143,6 +167,8 @@ class ApiService(private val context: Context) {
             .getJSONObject(0).getString("text")
     }
 
+    // ── Groq ──────────────────────────────────────────────────────────────────
+
     private fun callGroq(prompt: String, key: String): String =
         callGroqMessages(JSONArray().put(JSONObject().put("role", "user").put("content", prompt)), key)
 
@@ -156,7 +182,7 @@ class ApiService(private val context: Context) {
         val body = JSONObject()
             .put("model", "llama-3.3-70b-versatile")
             .put("messages", messages)
-            .put("max_tokens", 2000)
+            .put("max_tokens", 1000)
             .toString().toRequestBody("application/json".toMediaType())
         val req = Request.Builder()
             .url("https://api.groq.com/openai/v1/chat/completions")
@@ -167,6 +193,8 @@ class ApiService(private val context: Context) {
             .getJSONObject("message").getString("content")
     }
 
+    // ── Anthropic ─────────────────────────────────────────────────────────────
+
     private fun callAnthropic(prompt: String, key: String): String =
         callAnthropicHistory("", listOf("user" to prompt), key)
 
@@ -175,7 +203,7 @@ class ApiService(private val context: Context) {
         messages.forEach { (r, c) -> msgs.put(JSONObject().put("role", r).put("content", c)) }
         val body = JSONObject()
             .put("model", "claude-haiku-4-5-20251001")
-            .put("max_tokens", 2000)
+            .put("max_tokens", 1000)
             .put("system", system)
             .put("messages", msgs)
             .toString().toRequestBody("application/json".toMediaType())
@@ -187,6 +215,8 @@ class ApiService(private val context: Context) {
         return JSONObject(client.newCall(req).execute().body!!.string())
             .getJSONArray("content").getJSONObject(0).getString("text")
     }
+
+    // ── Parser ────────────────────────────────────────────────────────────────
 
     private fun parseTasksFromResponse(response: String): List<Task> {
         return runCatching {
